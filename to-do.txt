@@ -1,0 +1,18 @@
+THINGS TO MAKE CLASSES:
+  Encounters
+  Statuses
+  Bosses (if I want them to have special properties compared to other enemies)
+  Enemy skills
+  Items
+  Weapons
+  Armor
+  Vehicles (does that include foot travel?)
+  Shops
+  Towns
+  Dungeons
+
+THINGS TO CONSIDER:
+  Decide how to implement leveling up
+  Learn how to best split project into different files
+  Eventually plan to create custom classes
+  Eventually plan to include out-of-battle skills and options
