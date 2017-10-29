@@ -4,8 +4,11 @@ import collections
 
 
 class Character:
+    orderedSpellList = ["Cure", "Fog", "Sanctuary", "Fire", "Poison Smoke", "Slow", "Haste" "Stun",
+                        "Soft", "Curse", "Doom", "Bane"]
     def __init__(self):
         self.name = ""
+        self.fullName = self.name
         self.maxHP = 0
         self.currentHP = 0
         self.damage = 0
@@ -20,12 +23,10 @@ class Character:
         self.weakness = []
         self.resistance = []
         self.spellsKnown = collections.OrderedDict()
-        self.orderedSpellList = ["Cure", "Fog", "Sanctuary", "Fire", "Poison Smoke", "Slow", "Haste" "Stun",
-                                 "Soft", "Curse", "Doom Clock", "Bane"]
         self.status = []
 
     # Controls the logic and flow of a character's physical attack
-    def controlAttackLogic(self, target):
+    def attackTarget(self, target):
         timesAttackDone = 0
         # A character attacks once for each hitAmount they have
         while timesAttackDone < self.hitAmount:
@@ -114,60 +115,38 @@ class Character:
         if wasCritical:
             print("--Critical hit!")
             time.sleep(1)
-        entityName = "Enemy " + self.name if isinstance(self, Enemy) else self.name
-        print("--" + entityName + " takes " + str(damage) + " damage.")
+        print("--{} takes {} damage.".format(self.fullName, damage))
         time.sleep(0.5)
 
     # Prints the character's current HP
     def printCurrentHP(self):
-        entityName = "Enemy " + self.name if isinstance(self, Enemy) else self.name
-        print("--" + entityName + "'s HP is now " + str(self.currentHP) + ".")
+        print("--{}'s HP is now {}.".format(self.fullName, self.currentHP))
         time.sleep(0.3)
 
     # Prints that the target was killed
     def printDeathMessage(self):
-        entityName = "Enemy " + self.name if isinstance(self, Enemy) else self.name
-        print(entityName + " has fallen.")
+        print("{} has fallen.".format(self.fullName))
         time.sleep(0.3)
 
     # Prints that the attacker missed
     def printAttackMiss(self):
-        entityName = "Enemy " + self.name if isinstance(self, Enemy) else self.name
-        print("--" + entityName + " missed!")
+        print("--{} missed!".format(self.fullName))
         time.sleep(0.3)
 
     # Prints the amount of HP that a character heals
     def printAmountHealed(self, healHPValue):
-        print("--" + self.name + " healed " + str(healHPValue) + " HP!")
+        print("--{} healed {} HP!".format(self.fullName, healHPValue))
         time.sleep(0.5)
 
     # Prints that a character's stat has increased
     def printStatBuffMessage(self, buffedStat):
-        print("--" + self.name + "'s " + buffedStat.lower() + " has increased!")
+        print("--{}'s {} has increased!".format(self.fullName, buffedStat.lower()))
         time.sleep(0.5)
 
     # Prints that a character's stat has decreased
     def printStatDebuffMessage(self, debuffedStat):
-        print("--" + self.name + "'s " + debuffedStat.lower() + " has gone down!")
+        print("--{}'s {} has gone down!".format(self.fullName, debuffedStat.lower()))
         time.sleep(0.5)
-
-    # Prints that a character has died from the Doom status
-    def printDoomMessage(self):
-        entityName = "Enemy " + self.name if isinstance(self, Enemy) else self.name
-        print(entityName + "'s lifeline has been cut short by dark magic.")
-        time.sleep(0.5)
-        self.printDeathMessage()
-
-    # Controls the logic for the Doom status effect
-    def controlDoomStatusLogic(self):
-        # If the character has Doom in their status list, remove it from the list
-        sublist = isInList(self.status, "Doom")
-        if sublist:
-            sublist.remove("Doom")
-            # If that was the last copy of Doom in their status list, that character dies and a message prints
-            if "Doom" not in sublist:
-                self.currentHP = 0
-                self.printDoomMessage()
 
     # Controls the logic for the Paralysis status effect
     def controlParalysisStatusLogic(self):
@@ -206,8 +185,8 @@ class Character:
     def getListOfKnownSpellsAndCharges(self):
         tempList = list(self.spellsKnown.items())
         for spell, charges in tempList:
-            tempList[tempList.index((spell, charges))] = [spell + " (" + str(charges) + " charges remaining)"
-                                                          if charges != 1 else spell + " (1 charge remaining)"]
+            tempList[tempList.index((spell, charges))] = ["{} ({} charges remaining)".format(spell, charges)
+                                                          if charges != 1 else "{} (1 charge remaining)".format(spell)]
         return tempList
 
     # Puts the spells that a character knows in the proper order, as defined by the orderedSpellList
@@ -399,6 +378,7 @@ class BlackMage(Hero):
 class Enemy(Character):
     def __init__(self):
         Character.__init__(self)
+        self.fullName = "Enemy " + self.name
         self.currentHP = self.maxHP
         self.contactStatus = ''
         self.spellChance = 0
@@ -422,6 +402,13 @@ class Goblin(Enemy):
 
 
 class Spell:
+    listOfHealingSpells = ["Cure", "Sanctuary"]
+    listOfBuffSpells = ["Fog", "Haste"]
+    listOfDamageSpells = ["Fire", "Poison Smoke"]
+    listOfDebuffSpells = ["Slow", "Soft"]
+    listOfStatusSpells = ["Stun", "Doom"]
+    listOfInstantDeathSpells = ["Curse", "Bane"]
+
     def __init__(self):
         self.target = None
         self.name = ""
@@ -429,6 +416,20 @@ class Spell:
         self.spellPower = 0
         self.spellAccuracy = 0
         self.spellElement = []
+
+
+    # def castSpell(self, spellChosenIndex, actingHero, targetList):
+    #     # dictionaryOfSpellFunctions = {"Cure": CureSpell.healSpell(cureInstance, self, listOfCombatants),
+    #     #                               "Fog": FogSpells.buffSpell(fogInstance, self, listOfCombatants),
+    #     #                               2: SanctuarySpell.healSpell(sanctuaryInstance, self, listOfCombatants),
+    #     #                               3: FireSpell.damageSpell(fireInstance, self, listOfCombatants),
+    #     #                               4: PoisonSpell.damageSpell(poisonInstance, self, listOfCombatants),
+    #     #                               5: SlowSpell.debuffSpell(slowInstance, self, listOfCombatants)}
+    #     spellChosen = list(actingHero.spellsKnown.keys())[spellChosenIndex]
+    #     if spellChosen in self.listOfHealingSpells:
+    #
+    #     actingHero.spellsKnown[spellChosen] -= 1
+
 
     # TO WORK ON IN THE FUTURE
     # def constructSpellList(self, actingHero, targetList):
@@ -524,7 +525,7 @@ class HealingSpell(Spell):
         super().__init__()
 
     # Controls the logic for all spells that heal the target's HP
-    def controlHealingSpellLogic(self, actingHero, targetList):
+    def castHealingSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -552,7 +553,7 @@ class CureSpell(HealingSpell):
     @staticmethod
     def printSpellMessage(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("Little specks of light fill the air around " + targetName + ".")
+        print("Little specks of light fill the air around {}.".format(targetName))
 
 
 class SanctuarySpell(HealingSpell):
@@ -575,7 +576,7 @@ class BuffSpell(Spell):
         self.alteredStat = None
 
     # Controls the logic for all spells that increase the target's stats
-    def controlBuffSpellLogic(self, actingHero, targetList):
+    def castBuffSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -603,7 +604,7 @@ class FogSpell(BuffSpell):
     @staticmethod
     def printSpellMessage(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("A thick ethereal fog forms around " + targetName + ", acting as a powerful shield!")
+        print("A thick ethereal fog forms around {}, acting as a powerful shield!".format(targetName))
 
 
 class HasteSpell(BuffSpell):
@@ -618,7 +619,7 @@ class HasteSpell(BuffSpell):
     @staticmethod
     def printSpellMessage(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("The air around " + targetName + " begins to blur, as " + targetName + " moves with renewed speed.")
+        print("The air around {0} begins to blur, as {0} moves with renewed speed.".format(targetName))
 
 
 class DamageSpell(Spell):
@@ -626,7 +627,7 @@ class DamageSpell(Spell):
         super().__init__()
 
     # Controls the logic for all spells that decrease the target's HP
-    def controlDamageSpellLogic(self, actingHero, targetList):
+    def castDamageSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -666,17 +667,17 @@ class FireSpell(DamageSpell):
     @staticmethod
     def printSpellMessage(caster, target):
         casterName = "enemy " + caster.name if isinstance(caster, Enemy) else caster.name
-        print("A fireball shoots out of " + casterName + "'s hand.")
+        print("A fireball shoots out of {}'s hand.".format(casterName))
 
     @staticmethod
     def printSpellMessageHit(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("The fireball hits " + targetName + "'s body directly!")
+        print("The fireball hits {}'s body directly!".format(targetName))
 
     @staticmethod
     def printSpellMessageMiss(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("The fireball barely singes " + targetName + ".")
+        print("The fireball barely singes {}.".format(targetName))
 
 
 class PoisonGasSpell(DamageSpell):
@@ -693,7 +694,7 @@ class PoisonGasSpell(DamageSpell):
     def printSpellMessage(caster, target):
         casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
         targetAffiliation = "your party" if isinstance(caster, Enemy) else "the enemies"
-        print(casterName + " raises their arms, and clouds of toxic gas surround " + targetAffiliation + ".")
+        print("{} raises their arms, and clouds of toxic gas surround {}.".format(casterName, targetAffiliation))
 
 
 class DebuffSpell(Spell):
@@ -703,11 +704,11 @@ class DebuffSpell(Spell):
         self.alteredStat = []
 
     # Controls the logic for all spells that decrease a stat of the target's HP
-    def controlDebuffSpellLogic(self, actingHero, targetList):
+    def castDebuffSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
-            # Deuffs the characters (one or more) who were assigned to be targets of the spell
+            # Debuffs the characters (one or more) who were assigned to be targets of the spell
             listOfSelectedTargets = self.getListOfSelectedTargets(targetList, selectedTargetIndex - 1)
             self.printSpellMessage(actingHero, listOfSelectedTargets[0])
             for character in listOfSelectedTargets:
@@ -737,12 +738,11 @@ class SoftSpell(DebuffSpell):
     @staticmethod
     def printSpellMessage(caster, target):
         casterName = "enemy " + caster.name if isinstance(caster, Enemy) else caster.name
-        print("Wispy black smoke rises from " + casterName + ", and quickly covers the battlefield.")
+        print("Wispy black smoke rises from {}, and quickly covers the battlefield.".format(casterName))
 
     @staticmethod
     def printSpellMessageHit(caster, target):
-        targetName = "Enemy " + target.name if isinstance(target, Enemy) else target.name
-        print(targetName + "'s armor becomes malleable and weak!")
+        print("{}'s armor becomes malleable and weak!".format(target.fullName))
 
 
 class SlowSpell(DebuffSpell):
@@ -757,18 +757,16 @@ class SlowSpell(DebuffSpell):
 
     @staticmethod
     def printSpellMessage(caster, target):
-        casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
-        print(casterName + " raises a hand to their mouth, muttering arcane words.")
+        print("{} raises a hand to their mouth, muttering arcane words.".format(caster.fullName))
 
     @staticmethod
     def printSpellMessageHit(caster, target):
-        targetName = "Enemy " + target.name if isinstance(target, Enemy) else target.name
-        print(targetName + "'s body begins to significantly slow down.")
+        print("{}'s body begins to significantly slow down.".format(target.fullName))
 
     @staticmethod
     def printSpellMessageMiss(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("The utterances seem to have no effect on " + targetName + ".")
+        print("The utterances seem to have no effect on {}.".format(targetName))
 
 
 class StatusSpell(Spell):
@@ -777,7 +775,7 @@ class StatusSpell(Spell):
         self.status = []
 
     # Controls the logic for all spells that inflict a status effect on the target
-    def controlStatusSpellLogic(self, actingHero, targetList):
+    def castStatusSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -811,25 +809,23 @@ class StunSpell(StatusSpell):
 
     @staticmethod
     def printSpellMessage(caster, target):
-        casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print(casterName + " raises a hand, and dim specks of orange light appear around " + targetName + ".")
+        print("{} raises a hand, and dim specks of orange light appear around {}.".format(caster.fullName, targetName))
 
     @staticmethod
     def printSpellMessageHit(target):
-        targetName = "Enemy " + target.name if isinstance(target, Enemy) else target.name
-        print(targetName + "'s limbs begin to slow down, then begin to twitch violently.")
+        print("{}'s limbs begin to slow down, then begin to twitch violently.".format(target.fullName))
 
     @staticmethod
     def printSpellMessageMiss():
         print("The sparks fade within a second, and nothing seems to happen.")
 
 
-class DoomClockSpell(StatusSpell):
+class DoomSpell(StatusSpell):
     def __init__(self):
         super().__init__()
         self.target = "All"
-        self.name = "Doom Clock"
+        self.name = "Doom"
         self.effect = "(Makes all enemies fall after three turns)"
         self.spellAccuracy = 30
         self.spellElement = ["Death"]
@@ -837,10 +833,9 @@ class DoomClockSpell(StatusSpell):
 
     @staticmethod
     def printSpellMessage(caster, target):
-        casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
         targetAffiliation = "your party's" if isinstance(caster, Enemy) else "the enemies'"
-        print(casterName + " raises a hand and chants ominously... Spectral images of hourglasses flash in "
-              + targetAffiliation + " vision.")
+        print("{} raises a hand and chants ominously... Spectral images of hourglasses flash in {}"
+              "vision.".format(caster.fullName, targetAffiliation))
 
 
 class InstantDeathSpell(Spell):
@@ -848,7 +843,7 @@ class InstantDeathSpell(Spell):
         super().__init__()
 
     # Controls the logic for all spells that instantly set the target's HP to 0
-    def controlStatusSpellLogic(self, actingHero, targetList):
+    def castInstantDeathSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -878,18 +873,17 @@ class CurseSpell(InstantDeathSpell):
 
     @staticmethod
     def printSpellMessage(caster, target):
-        casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print(casterName + " drags a thumbnail across a wooden doll while staring at " + targetName + ".")
+        print("{} drags a thumbnail across a wooden doll while staring at {}.".format(caster.fullName, targetName))
 
     @staticmethod
     def printSpellMessageHit(caster, target):
         targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
-        print("A shadow passes over " + targetName + "'s face... They suddenly fall down, and move no more.")
+        print("A shadow passes over {}'s face... They suddenly fall down, completely still.".format(targetName))
 
     @staticmethod
     def printSpellMessageMiss(caster, target):
-        print("The wooden doll suddenly shatters with no effect.")
+        print("The wooden doll splinters with no effect.")
 
 
 class BaneSpell(InstantDeathSpell):
@@ -903,8 +897,90 @@ class BaneSpell(InstantDeathSpell):
 
     @staticmethod
     def printSpellMessage(caster, target):
-        casterName = "Enemy " + caster.name if isinstance(caster, Enemy) else caster.name
-        print(casterName + " spreads their arms to either side, and thick purple mist covers the battlefield.")
+        print("{} spreads their arms to either side, and thick purple mist covers the"
+              "battlefield.".format(caster.fullName))
+
+
+class StatusEffect:
+    def __init__(self, name):
+        self.name = name
+        self.endsAfterBattle = True
+
+    def isIncapacitated(self):
+        if self.name in ["Stone"]:
+            return True
+        return False
+
+    def cannotAct(self):
+        if self.name in ["Paralysis", "Sleep"]:
+            return True
+        return False
+
+    def applyStatusDamage(self, character):
+        pass
+
+    # Prints that a character has died from the Doom status
+    def printDoomMessage(self, character):
+        print("--{}'s lifeline has been cut short by dark magic.".format(character.fullName))
+        time.sleep(0.5)
+        character.printDeathMessage()
+
+    # Controls the logic for the Doom status effect
+    def controlDoomStatusLogic(self, character):
+        # If the character has Doom in their status list, remove it from the list
+        sublist = isInList(character.status, "Doom")
+        if sublist:
+            sublist.remove("Doom")
+            # If that was the last copy of Doom in their status list, that character dies and a message prints
+            if "Doom" not in sublist:
+                character.currentHP = 0
+                character.printDoomMessage()
+
+
+class ParalysisStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class PoisonStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class StoneStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class BlindStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class MuteStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class SleepStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class ConfusionStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class DoomStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
+
+class HolyStatus(StatusEffect):
+    def __init__(self):
+        super().__init__()
+
 
 ####################################
 ####################################
@@ -921,14 +997,11 @@ def isInList(listOfLists, searchedQuery):
 def chooseTarget(actingHero, targetList, choice="target"):
     # Loops until the player chooses a legal target
     while True:
-        print(actingHero.name + "! Choose your " + choice + ":")
+        print("{}! Choose your {}:".format(actingHero.name, choice))
         time.sleep(0.5)
         # Prints all available targets, and the indices to each available target
         for index, target in enumerate(targetList):
-            if target is not str:
-                print("\t\t" + str(index + 1) + ". " + target.name)
-            else:
-                print("\t\t" + str(index + 1) + ". " + target)
+            print("\t\t{}. {}".format(index + 1, target.name))
         print("\t\tc. Cancel")
         targetChosen = input()
         # Returns the chosen index, or None if the player chose to cancel the action
@@ -952,7 +1025,7 @@ def determineInitiative(combatantList):
 # Prints the current round of combat and all surviving combatants on either side
 def printCurrentRoundDetails(currentRound, heroList, enemyList):
     # Displays the current round
-    print("\n\tROUND " + str(currentRound) + "!")
+    print("\n\tROUND {}!".format(currentRound))
     time.sleep(2)
     # Displays all surviving combatants, putting a comma between them
     print(', '.join(str(combatant.name) for combatant in heroList))
@@ -962,13 +1035,22 @@ def printCurrentRoundDetails(currentRound, heroList, enemyList):
 
 
 def chooseTurnAction(actingHero, livingEnemies):
+    listOfOptions = ["Attack", "Cast a spell", "Use an item", "Run away"]
     while True:
-        listOfOptions = ["Attack", "Cast a spell", "Use an item", "Run away"]
-        actionChosen = chooseTarget(actingHero, listOfOptions, "action")
-        if actionChosen:
-            actionChosenBoolean = controlActionChoiceLogic(actingHero, livingEnemies, actionChosen)
+        print("{}! Choose your action:".format(actingHero.name))
+        time.sleep(0.5)
+        # Prints all available targets, and the indices to each available target
+        for index, option in enumerate(listOfOptions):
+            print("\t\t{}. {}".format(index + 1, option.name))
+        targetChosen = input()
+        # Returns the chosen index, or None if the player chose to cancel the action
+        if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(listOfOptions):
+            actionChosenBoolean = controlActionChoiceLogic(actingHero, livingEnemies, int(targetChosen) - 1)
             if actionChosenBoolean:
                 break
+        else:
+            print("That is not a valid response.")
+            time.sleep(1)
 
 
 def controlActionChoiceLogic(actingHero, livingEnemies, actionChosen):
@@ -976,9 +1058,9 @@ def controlActionChoiceLogic(actingHero, livingEnemies, actionChosen):
     if actionChosen == 1:
         targetChosen = chooseTarget(actingHero, livingEnemies)
         if targetChosen:
-            print(actingHero.name + " attacks enemy " + livingEnemies[targetChosen].name + "!")
+            print("{} attacks enemy {}!".format(actingHero.name, livingEnemies[targetChosen].name))
             time.sleep(1.5)
-            actingHero.controlAttackLogic(livingEnemies[targetChosen])
+            actingHero.attackTarget(livingEnemies[targetChosen])
             return True
         return False
     elif actionChosen == 2:
@@ -993,7 +1075,7 @@ def controlActionChoiceLogic(actingHero, livingEnemies, actionChosen):
     elif actionChosen == 4:
         if actingHero.shouldRun(livingEnemies):
             pass
-        return True
+        return False
 
 
 # Controls the flow of combat between heroes and enemies
@@ -1018,12 +1100,12 @@ def controlCombatSystemLogic(heroList, enemyList):
             if currentActingCombatant in livingHeroes and len(livingEnemies) > 0:
                 targetChosen = chooseTarget(currentActingCombatant, livingEnemies)
                 # If the hero chooses to physically attack
-                print(currentActingCombatant.name + " attacks enemy " + str(livingEnemies[targetChosen].name) + "!")
+                print("{} attacks enemy {}!").format(currentActingCombatant.name, livingEnemies[targetChosen].name)
                 time.sleep(1.5)
             # If the current attacker is an enemy and there are surviving heroes, they randomly attack one
             elif currentActingCombatant in livingEnemies and len(livingHeroes) > 0:
                 targetChosen = random.randint(0, len(livingHeroes) - 1)
-                print(currentActingCombatant.name + " attacks " + livingHeroes[targetChosen].name + "!")
+                print("{} attacks {}!").format(currentActingCombatant.name, livingHeroes[targetChosen].name)
                 time.sleep(1.5)
             livingEnemies = [enemy for enemy in enemyList if enemy.currentHP > 0]
             livingHeroes = [hero for hero in heroList if hero.currentHP > 0]

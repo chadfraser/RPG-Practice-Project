@@ -4,6 +4,7 @@ THINGS TO MAKE CLASSES:
   Bosses (if I want them to have special properties compared to other enemies)
   Enemy skills
   Items
+  Inventory
   Weapons
   Armor
   Vehicles (does that include foot travel?)
