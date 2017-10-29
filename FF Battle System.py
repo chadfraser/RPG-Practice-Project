@@ -4,8 +4,10 @@ import collections
 
 
 class Character:
-    orderedSpellList = ["Cure", "Fog", "Sanctuary", "Fire", "Poison Smoke", "Slow", "Haste" "Stun",
-                        "Soft", "Curse", "Doom", "Bane"]
+    orderedSpellList = [SpellInstance.CURE, SpellInstance.FOG, SpellInstance.SANCTUARY, SpellInstance.FIRE,
+                        SpellInstance.POISON_GAS, SpellInstance.SLOW, SpellInstance.HASTE, SpellInstance.STUN,
+                        SpellInstance.SOFT, SpellInstance.CURSE, SpellInstance.DOOM, SpellInstance.BANE]
+
     def __init__(self):
         self.name = ""
         self.fullName = self.name
@@ -185,14 +187,15 @@ class Character:
     def getListOfKnownSpellsAndCharges(self):
         tempList = list(self.spellsKnown.items())
         for spell, charges in tempList:
-            tempList[tempList.index((spell, charges))] = ["{} ({} charges remaining)".format(spell, charges)
-                                                          if charges != 1 else "{} (1 charge remaining)".format(spell)]
+            tempList[tempList.index((spell, charges))] = ["{} ({} charges remaining)".format(spell.name, charges)
+                                                          if charges != 1 else "{} (1 charge"
+                                                                               "remaining)".format(spell.name)]
         return tempList
 
     # Puts the spells that a character knows in the proper order, as defined by the orderedSpellList
     def reorderCharacterSpellDict(self):
-        tempSpellsKnownDict = collections.OrderedDict((spellName, spell) for spellName, spell in
-                                                      self.spellsKnown.items() if spell in self.orderedSpellList)
+        tempSpellsKnownDict = collections.OrderedDict((spell, self.spellsKnown[spell]) for spell in
+                                                      self.orderedSpellList if spell in self.spellsKnown)
         self.spellsKnown = tempSpellsKnownDict.copy()
 
 
@@ -329,7 +332,7 @@ class RedMage(Hero):
         self.speed = 5
         self.magicDef = 44
         self.criticalChance = 10
-        self.spellsKnown = collections.OrderedDict([("Cure", 2), ("Fire", 2)])
+        self.spellsKnown = collections.OrderedDict([(SpellInstance.CURE, 2), (SpellInstance.FIRE, 2)])
         self.name = name
 
 
@@ -350,7 +353,8 @@ class WhiteMage(Hero):
         self.hitRate = 8
         self.magicDef = 44
         self.criticalChance = 5
-        self.spellsKnown = collections.OrderedDict([("Cure", 3), ("Fog", 2), ("Sanctuary", 2)])
+        self.spellsKnown = collections.OrderedDict([(SpellInstance.CURE, 3), (SpellInstance.FOG, 2),
+                                                    (SpellInstance.SANCTUARY, 2)])
         self.name = name
 
 
@@ -371,7 +375,8 @@ class BlackMage(Hero):
         self.hitRate = 18
         self.magicDef = 44
         self.criticalChance = 15
-        self.spellsKnown = collections.OrderedDict([("Fire", 3), ("Poison Smoke", 2), ("Slow", 2)])
+        self.spellsKnown = collections.OrderedDict([(SpellInstance.FIRE, 3), (SpellInstance.POISON_GAS, 2),
+                                                    (SpellInstance.SLOW, 2)])
         self.name = name
 
 
@@ -402,72 +407,30 @@ class Goblin(Enemy):
 
 
 class Spell:
-    listOfHealingSpells = ["Cure", "Sanctuary"]
-    listOfBuffSpells = ["Fog", "Haste"]
-    listOfDamageSpells = ["Fire", "Poison Smoke"]
-    listOfDebuffSpells = ["Slow", "Soft"]
-    listOfStatusSpells = ["Stun", "Doom"]
-    listOfInstantDeathSpells = ["Curse", "Bane"]
-
     def __init__(self):
         self.target = None
+        self.targetParty = "Enemy"
         self.name = ""
         self.effect = ""
         self.spellPower = 0
         self.spellAccuracy = 0
         self.spellElement = []
 
-
-    # def castSpell(self, spellChosenIndex, actingHero, targetList):
-    #     # dictionaryOfSpellFunctions = {"Cure": CureSpell.healSpell(cureInstance, self, listOfCombatants),
-    #     #                               "Fog": FogSpells.buffSpell(fogInstance, self, listOfCombatants),
-    #     #                               2: SanctuarySpell.healSpell(sanctuaryInstance, self, listOfCombatants),
-    #     #                               3: FireSpell.damageSpell(fireInstance, self, listOfCombatants),
-    #     #                               4: PoisonSpell.damageSpell(poisonInstance, self, listOfCombatants),
-    #     #                               5: SlowSpell.debuffSpell(slowInstance, self, listOfCombatants)}
-    #     spellChosen = list(actingHero.spellsKnown.keys())[spellChosenIndex]
-    #     if spellChosen in self.listOfHealingSpells:
-    #
-    #     actingHero.spellsKnown[spellChosen] -= 1
-
-
-    # TO WORK ON IN THE FUTURE
-    # def constructSpellList(self, actingHero, targetList):
-    #     # Loop reiterates until the player chooses a valid target
-    #     while True:
-    #         selectedTargetOfSpell = []
-    #         print("Choose the target for your " + self.name + " spell " + self.effect)
-    #         # If the spell only targets one character, prints an enumerated list of all possible targets
-    #         if self.target == "One":
-    #             for character in targetList:
-    #                 print("\t\t" + str(targetList.index(character) + 1) + ". " + character.name)
-    #         # If the spell targets all heroes, give the player only the option to select all heroes, or the
-    #         # option to cancel
-    #         elif self.target == "All":
-    #             print("\t\t1. All heroes" if isinstance(targetList[0], Hero) else print("\t\t1. All enemies"))
-    #         print("\t\tc. Cancel")
-    #         targetInput = input()
-    #         # Recognizes the player's input and relates it to the target
-    #         if targetInput.isnumeric() and 0 <= int(targetInput) - 1 < len(targetList) and self.target == "One":
-    #             selectedTargetOfSpell.append(targetList[int(targetInput) - 1])
-    #             # Removes one charge of the spell being cast
-    #             # Provides unique flavor text for the spell, ending with the target hero's name
-    #             actingHero.spellsKnown[self.name] -= 1
-    #             print(self.spellText + selectedTargetOfSpell[0].name + self.secondaryText, end='')
-    #             return selectedTargetOfSpell
-    #         elif targetInput == "1" and self.target == "All":
-    #             selectedTargetOfSpell = [character for character in targetList]
-    #             # Removes one charge of the spell being cast
-    #             # Provides unique flavor text for the spell
-    #             actingHero.spellsKnown[self.name] -= 1
-    #             print(self.spellText, end='')
-    #             return selectedTargetOfSpell
-    #         # Returns to the attack selection phase if the player cancels the spell
-    #         elif targetInput == "c".lower():
-    #             return False
-    #         else:
-    #             print("That is not a valid response.")
-    #             time.sleep(1)
+    # Takes the selected spell and instigates the appropriate castSpell method from its particular class
+    @staticmethod
+    def castSpellSuperclassMethod(spellChosenIndex, actingHero, livingCombatants):
+        spellChosen = list(actingHero.spellsKnown.keys())[spellChosenIndex]
+        if spellChosen.targetParty == "Ally":
+            targetList = [hero for hero in livingCombatants if isinstance(hero, Hero)]
+        else:
+            targetList = [enemy for enemy in livingCombatants if isinstance(enemy, Enemy)]
+        spellChosenBoolean = spellChosen.castSpell(actingHero, targetList)
+        # If the player chose a target for the spell, remove one charge from that spell and return True
+        if spellChosenBoolean:
+            actingHero.spellsKnown[spellChosen] -= 1
+            return True
+        # If the player cancelled the spell while selecting the target, return False
+        return False
 
     # Determines if a spell should affect the target or not
     def shouldSpellHit(self, target):
@@ -523,9 +486,10 @@ class Spell:
 class HealingSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Ally"
 
     # Controls the logic for all spells that heal the target's HP
-    def castHealingSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -572,11 +536,12 @@ class SanctuarySpell(HealingSpell):
 class BuffSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Ally"
         self.spellPower = 0
         self.alteredStat = None
 
     # Controls the logic for all spells that increase the target's stats
-    def castBuffSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -625,9 +590,10 @@ class HasteSpell(BuffSpell):
 class DamageSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Enemy"
 
     # Controls the logic for all spells that decrease the target's HP
-    def castDamageSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -700,11 +666,12 @@ class PoisonGasSpell(DamageSpell):
 class DebuffSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Enemy"
         self.spellPower = 0
         self.alteredStat = []
 
     # Controls the logic for all spells that decrease a stat of the target's HP
-    def castDebuffSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -772,10 +739,11 @@ class SlowSpell(DebuffSpell):
 class StatusSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Enemy"
         self.status = []
 
     # Controls the logic for all spells that inflict a status effect on the target
-    def castStatusSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -841,9 +809,10 @@ class DoomSpell(StatusSpell):
 class InstantDeathSpell(Spell):
     def __init__(self):
         super().__init__()
+        self.targetParty = "Enemy"
 
     # Controls the logic for all spells that instantly set the target's HP to 0
-    def castInstantDeathSpell(self, actingHero, targetList):
+    def castSpell(self, actingHero, targetList):
         listOfPossibleTargets = self.getListOfPossibleTargets(targetList)
         selectedTargetIndex = chooseTarget(actingHero, listOfPossibleTargets)
         if selectedTargetIndex:
@@ -899,6 +868,21 @@ class BaneSpell(InstantDeathSpell):
     def printSpellMessage(caster, target):
         print("{} spreads their arms to either side, and thick purple mist covers the"
               "battlefield.".format(caster.fullName))
+
+
+class SpellInstance:
+    CURE = CureSpell()
+    FOG = FogSpell()
+    SANCTUARY = SanctuarySpell()
+    HASTE = HasteSpell()
+    FIRE = FireSpell()
+    POISON_GAS = PoisonGasSpell()
+    SLOW = SlowSpell()
+    STUN = StunSpell()
+    SOFT = SoftSpell()
+    CURSE = CurseSpell()
+    DOOM = DoomSpell()
+    BANE = BaneSpell()
 
 
 class StatusEffect:
@@ -1034,18 +1018,19 @@ def printCurrentRoundDetails(currentRound, heroList, enemyList):
     time.sleep(2)
 
 
-def chooseTurnAction(actingHero, livingEnemies):
+def chooseTurnAction(actingHero, livingEnemies, livingHeroes):
     listOfOptions = ["Attack", "Cast a spell", "Use an item", "Run away"]
     while True:
         print("{}! Choose your action:".format(actingHero.name))
         time.sleep(0.5)
         # Prints all available targets, and the indices to each available target
         for index, option in enumerate(listOfOptions):
-            print("\t\t{}. {}".format(index + 1, option.name))
+            print("\t\t{}. {}".format(index + 1, option))
         targetChosen = input()
         # Returns the chosen index, or None if the player chose to cancel the action
         if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(listOfOptions):
-            actionChosenBoolean = controlActionChoiceLogic(actingHero, livingEnemies, int(targetChosen) - 1)
+            actionChosenBoolean = controlActionChoiceLogic(actingHero, livingEnemies, livingHeroes,
+                                                           int(targetChosen) - 1)
             if actionChosenBoolean:
                 break
         else:
@@ -1053,7 +1038,7 @@ def chooseTurnAction(actingHero, livingEnemies):
             time.sleep(1)
 
 
-def controlActionChoiceLogic(actingHero, livingEnemies, actionChosen):
+def controlActionChoiceLogic(actingHero, livingEnemies, livingHeroes, actionChosen):
     # If the hero chooses to physically attack
     if actionChosen == 1:
         targetChosen = chooseTarget(actingHero, livingEnemies)
@@ -1062,20 +1047,25 @@ def controlActionChoiceLogic(actingHero, livingEnemies, actionChosen):
             time.sleep(1.5)
             actingHero.attackTarget(livingEnemies[targetChosen])
             return True
-        return False
+    # If the hero chooses to cast a spell
     elif actionChosen == 2:
         actingHero.reorderCharacterSpellDict()
         spellListWithCharges = actingHero.getListOfKnownSpellsAndCharges()
-        targetChosen = chooseTarget(actingHero, spellListWithCharges, "spell")
-        if targetChosen:
-            return True
-        return False
+        spellChosen = chooseTarget(actingHero, spellListWithCharges, "spell")
+        if spellChosen:
+            livingCombatants = livingHeroes + livingEnemies
+            spellCastBoolean = Spell.castSpellSuperclassMethod(spellChosen - 1, actingHero, livingCombatants)
+            if spellCastBoolean:
+                return True
+    # If the hero chooses to use an item
     elif actionChosen == 3:
         pass  # Define item use
+    # If the hero chooses to run
     elif actionChosen == 4:
         if actingHero.shouldRun(livingEnemies):
             pass
-        return False
+        return True
+    return False
 
 
 # Controls the flow of combat between heroes and enemies
