@@ -70,7 +70,7 @@ class Character:
         maxEnemySpeed = max(listOfEnemySpeeds)
         if maxEnemySpeed > 200:
             return False
-        randomCheckToRun = random.randint(0, maxEnemySpeed)
+        randomCheckToRun = random.randint(0, 2 * maxEnemySpeed)
         if self.speed > randomCheckToRun:
             return True
         return False
@@ -265,9 +265,8 @@ class Fighter(Hero):
         self.agility = 6
         self.intelligence = 2
         self.vitality = 10
-        self.luck = 7
+        self.luck = 5
         self.hitRate = 24
-        self.speed = 4
         self.magicDef = 31
         self.criticalChance = 10
         self.name = name
@@ -286,7 +285,7 @@ class Thief(Hero):
         self.agility = 12
         self.intelligence = 6
         self.vitality = 6
-        self.luck = 18
+        self.luck = 20
         self.hitRate = 21
         self.magicDef = 31
         self.criticalChance = 40
@@ -306,7 +305,7 @@ class Monk(Hero):
         self.agility = 7
         self.intelligence = 6
         self.vitality = 23
-        self.luck = 7
+        self.luck = 9
         self.hitRate = 14
         self.magicDef = 23
         self.criticalChance = 8
@@ -327,7 +326,7 @@ class RedMage(Hero):
         self.agility = 6
         self.intelligence = 11
         self.vitality = 8
-        self.luck = 7
+        self.luck = 9
         self.hitRate = 16
         self.speed = 5
         self.magicDef = 44
@@ -349,7 +348,7 @@ class WhiteMage(Hero):
         self.agility = 12
         self.intelligence = 18
         self.vitality = 11
-        self.luck = 7
+        self.luck = 11
         self.hitRate = 8
         self.magicDef = 44
         self.criticalChance = 5
@@ -371,7 +370,7 @@ class BlackMage(Hero):
         self.agility = 11
         self.intelligence = 23
         self.vitality = 2
-        self.luck = 11
+        self.luck = 14
         self.hitRate = 18
         self.magicDef = 44
         self.criticalChance = 15
@@ -401,6 +400,7 @@ class Goblin(Enemy):
         self.defense = 3
         self.evasion = 6
         self.accuracy = 8
+        self.speed = 18
         self.magicDef = 16
         self.criticalChance = 4
         self.name = name
@@ -1063,7 +1063,10 @@ def controlActionChoiceLogic(actingHero, livingEnemies, livingHeroes, actionChos
     # If the hero chooses to run
     elif actionChosen == 4:
         if actingHero.shouldRun(livingEnemies):
-            pass
+            for enemy in livingEnemies:
+                enemy.currentHP = 0
+            print("Escaped!")
+        print("You couldn't escape!")
         return True
     return False
 
@@ -1115,15 +1118,17 @@ def controlCombatSystemLogic(heroList, enemyList):
 #     hero.accuracy = hero.hitRate
 
 
-h1 = Fighter("Leo")
-h2 = Fighter("Mike")
-h3 = Fighter("Don")
-h4 = Fighter("Raph")
-e1 = Goblin("Bob")
-e2 = Goblin("Rob")
-e3 = Goblin("Klobb")
-
-L1 = [h1, h2, h3, h4]
-L2 = [e1, e2, e3]
-
-controlCombatSystemLogic(L1, L2)
+# h1 = Fighter("Leo")
+# h2 = Fighter("Mike")
+# h3 = Fighter("Don")
+# h4 = Fighter("Raph")
+# e1 = Goblin("Bob")
+# e2 = Goblin("Rob")
+# e3 = Goblin("Klobb")
+#
+# L1 = [h1, h2, h3, h4]
+# L2 = [e1, e2, e3]
+#
+# for hero in L1:
+#     hero.currentHP = hero.maxHP
+# controlCombatSystemLogic(L1, L2)
