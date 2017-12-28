@@ -1,5 +1,6 @@
 import FFBattleSystem
 import FFSpellSystem
+import FFLevelSystem
 
 e1 = FFBattleSystem.Goblin()
 e2 = FFBattleSystem.Goblin()
@@ -12,17 +13,26 @@ h4 = FFBattleSystem.BlackMage()
 heroes = [h1, h2, h3, h4]
 for hero in heroes:
     hero.currentHP = hero.maxHP
-    hero.damage = max(1, hero.strength // 2)
-    hero.defense = hero.armor
-    hero.evasion = hero.agility
-    hero.hitAmount = 1 + hero.hitRate // 32
-    hero.fullName = hero.name
 
-h1.spellsKnown[FFSpellSystem.SpellInstance.HASTE] = 1
-h2.spellsKnown[FFSpellSystem.SpellInstance.STUN] = 1
-h3.spellsKnown[FFSpellSystem.SpellInstance.SOFT] = 1
-h4.spellsKnown[FFSpellSystem.SpellInstance.CURSE] = 1
-h2.spellsKnown[FFSpellSystem.SpellInstance.DOOM] = 1
-h3.spellsKnown[FFSpellSystem.SpellInstance.BANE] = 1
+h1.spellsKnown[FFSpellSystem.SpellInstance.HASTE] = [1, 1]
+h2.spellsKnown[FFSpellSystem.SpellInstance.STUN] = [1, 1]
+h2.spellsKnown[FFSpellSystem.SpellInstance.SOFT] = [1, 1]
+h1.spellsKnown[FFSpellSystem.SpellInstance.ARMAGEDDON] = [8, 8]
+h2.spellsKnown[FFSpellSystem.SpellInstance.ARMAGEDDON] = [8, 8]
+h3.spellsKnown[FFSpellSystem.SpellInstance.ARMAGEDDON] = [8, 8]
+h4.spellsKnown[FFSpellSystem.SpellInstance.CURSE] = [1, 1]
+h2.spellsKnown[FFSpellSystem.SpellInstance.BANE] = [1, 1]
+h3.spellsKnown[FFSpellSystem.SpellInstance.BANE] = [1, 1]
+h4.spellsKnown[FFSpellSystem.SpellInstance.ARMAGEDDON] = [8, 8]
 
-FFBattleSystem.controlCombatSystemLogic(heroes, enemiesList)
+h1.status = ["Sleep", "Paralysis", "Doom"]
+e3.maxHP = e3.currentHP = 100
+h1.spellsKnown[FFSpellSystem.SpellInstance.PURGE] = [2, 2]
+h2.spellsKnown[FFSpellSystem.SpellInstance.BEACON] = [1, 1]
+h3.spellsKnown[FFSpellSystem.SpellInstance.SILENCE] = [1, 1]
+# h1.experience += 100
+# FFLevelSystem.checkExperienceAndLevelUp(h1)
+
+print(h1.status)
+FFBattleSystem.startCombat(heroes, enemiesList)
+print(h1.status)

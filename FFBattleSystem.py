@@ -2,15 +2,19 @@ import random
 import time
 import collections
 import FFSpellSystem
+import FFItemSystem
 
 
 class Character:
     orderedSpellList = [FFSpellSystem.SpellInstance.CURE, FFSpellSystem.SpellInstance.FOG,
                         FFSpellSystem.SpellInstance.SANCTUARY, FFSpellSystem.SpellInstance.FIRE,
                         FFSpellSystem.SpellInstance.POISON_GAS, FFSpellSystem.SpellInstance.SLOW,
+                        FFSpellSystem.SpellInstance.BEACON, FFSpellSystem.SpellInstance.SILENCE,
                         FFSpellSystem.SpellInstance.HASTE, FFSpellSystem.SpellInstance.STUN,
                         FFSpellSystem.SpellInstance.SOFT, FFSpellSystem.SpellInstance.CURSE,
-                        FFSpellSystem.SpellInstance.DOOM, FFSpellSystem.SpellInstance.BANE]
+                        FFSpellSystem.SpellInstance.DOOM, FFSpellSystem.SpellInstance.BANE,
+                        FFSpellSystem.SpellInstance.PURGE,
+                        FFSpellSystem.SpellInstance.ARMAGEDDON, FFSpellSystem.SpellInstance.JUDGMENT]
 
     def __init__(self):
         self.name = ""
@@ -30,10 +34,12 @@ class Character:
         self.resistance = []
         self.spellsKnown = collections.OrderedDict()
         self.status = []
+        self.experience = 0
 
     # Controls the logic and flow of a character's physical attack
     def attackTarget(self, target):
         timesAttackDone = 0
+        self.printAttackTarget(target)
         # A character attacks once for each strikeCount they have
         while timesAttackDone < self.strikeCount:
             # Checks if each attack hit the target
@@ -124,6 +130,10 @@ class Character:
         print("--{} has fallen.".format(self.fullName))
         time.sleep(1)
 
+    def printAttackTarget(self, target):
+        print("{} attacks {}!".format(self.fullName, target.fullName))
+        time.sleep(1.5)
+
     # Prints that the attacker missed
     def printAttackMiss(self):
         print("--{} missed!".format(self.fullName))
@@ -144,17 +154,6 @@ class Character:
         print("--{}'s {} has gone down!".format(self.fullName, debuffedStat.lower()))
         time.sleep(1)
 
-    # Controls the logic for the Paralysis status effect
-    def controlParalysisStatusLogic(self):
-        # If the character has Paralysis in their status list, generate a random number from 1 to 4 and return True
-        if "Paralysis" in self.status:
-            paralysisCheck = random.randint(1, 4)
-            # The character is healed of Paralysis 25% of the time
-            if paralysisCheck == 1:
-                self.status.remove("Paralysis")
-            return True
-        return False
-
     # Heals the character a specific amount
     def healCharacter(self, healHPValue):
         self.currentHP = min(self.maxHP, self.currentHP + healHPValue)
@@ -167,6 +166,9 @@ class Character:
         elif statusToBuff == "Strike Count":
             self.strikeCount += statValue
             time.sleep(1)
+        elif statusToBuff == "Evasion":
+            self.evasion += statValue
+            time.sleep(1)
 
     # Decreases a particular stat of the character by a specific amount
     def debuffCharacter(self, statusToDebuff, statValue):
@@ -176,21 +178,21 @@ class Character:
         elif statusToDebuff == "Strike Count":
             self.strikeCount = max(1, self.strikeCount - statValue)
             time.sleep(1)
+        elif statusToDebuff == "Evasion":
+            self.strikeCount = max(0, self.evasion - statValue)
+            time.sleep(1)
 
-    # Returns a list of strings containing the spells a character knows and how many charges of that spell remain
-    def getListOfKnownSpellsAndCharges(self):
-        tempList = list(self.spellsKnown.items())
-        for spell, charges in tempList:
-            tempList[tempList.index((spell, charges))] = ["{} ({} charges remaining)".format(spell.name, charges)
-                                                          if charges != 1 else "{} (1 charge"
-                                                                               " remaining)".format(spell.name)]
-        return tempList
-
-    # Puts the spells that a character knows in the proper order, as defined by the orderedSpellList
-    def reorderCharacterSpellDict(self):
-        tempSpellsKnownDict = collections.OrderedDict((spell, self.spellsKnown[spell]) for spell in
-                                                      self.orderedSpellList if spell in self.spellsKnown)
-        self.spellsKnown = tempSpellsKnownDict.copy()
+    # TO BE IMPLEMENTED LATER
+    # # Controls the logic for the Paralysis status effect
+    # def controlParalysisStatusLogic(self):
+    #     # If the character has Paralysis in their status list, generate a random number from 1 to 4 and return True
+    #     if "Paralysis" in self.status:
+    #         paralysisCheck = random.randint(1, 4)
+    #         # The character is healed of Paralysis 25% of the time
+    #         if paralysisCheck == 1:
+    #             self.status.remove("Paralysis")
+    #         return True
+    #     return False
 
 
 class Hero(Character):
@@ -211,6 +213,29 @@ class Hero(Character):
         self.accuracy = self.hitRate
         self.level = 1
 
+    def setHeroDefaultValues(self):
+        self.damage = max(1, self.strength // 2)
+        self.defense = self.armor
+        self.evasion = self.agility
+        self.strikeCount = 1 + self.hitRate // 32
+        self.fullName = self.name
+
+    # Returns a list of strings containing the spells a character knows and how many charges of that spell remain
+    def getListOfKnownSpellsAndCharges(self):
+        tempList = list(self.spellsKnown.items())
+        print()
+        for spell, charges in tempList:
+            tempList[tempList.index((spell, charges))] = ["{} ({} charges remaining)".format(spell.name, charges[0])
+                                                          if charges != 1 else "{} (1 charge"
+                                                                               " remaining)".format(spell.name)]
+        return tempList
+
+    # Puts the spells that a character knows in the proper order, as defined by the orderedSpellList
+    def reorderCharacterSpellDict(self):
+        tempSpellsKnownDict = collections.OrderedDict((spell, self.spellsKnown[spell]) for spell in
+                                                      self.orderedSpellList if spell in self.spellsKnown)
+        self.spellsKnown = tempSpellsKnownDict.copy()
+
     # Determines whether the hero successfully runs
     def shouldRun(self, listOfEnemies):
         # The chance of running is based on the enemy with the highest agility, and the acting hero's agility
@@ -224,6 +249,29 @@ class Hero(Character):
         randomCheckToRun = random.randint(0, 2 * maxEnemyAgility)
         if self.agility > randomCheckToRun:
             return True
+        return False
+
+    # Shows the player all of the hero's known spells, and lets them choose which spell to cast
+    def selectAndCastSpell(self, livingHeroes, livingEnemies):
+        # Properly orders the hero's spell dictionary
+        self.reorderCharacterSpellDict()
+        # Gets a list of strings of the spell dictionary's values, and how many charges of each of those spells remain
+        spellListWithCharges = self.getListOfKnownSpellsAndCharges()
+        # Immediately cancel the action if the hero does not have any spell charges
+        if not self.spellsKnown or all(value[0] == 0 for value in self.spellsKnown.values()):
+            print("You cannot cast a spell now.")
+            time.sleep(1.5)
+            return False
+        # Otherwise, let the hero choose which spell they wish to cast
+        spellChosen = chooseSpell(self, spellListWithCharges)
+        # If the hero does not cancel the action, pass the chosen spell to the FFSpellSystem module so it can run the
+        # logic on casting the spell
+        if spellChosen:
+            livingCombatants = livingHeroes + livingEnemies
+            spellCastCompleted = FFSpellSystem.Spell.castSpellSuperclassMethod(spellChosen - 1, self, livingCombatants)
+            # Return True if the hero did not cancel the action at any point, or False if they did
+            if spellCastCompleted:
+                return True
         return False
 
 
@@ -305,8 +353,8 @@ class RedMage(Hero):
         self.hitRate = 16
         self.magicDef = 44
         self.criticalChance = 10
-        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.CURE, 2),
-                                                    (FFSpellSystem.SpellInstance.FIRE, 2)])
+        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.CURE, [2, 2]),
+                                                    (FFSpellSystem.SpellInstance.FIRE, [2, 2])])
         self.name = name
 
 
@@ -327,9 +375,9 @@ class WhiteMage(Hero):
         self.hitRate = 8
         self.magicDef = 44
         self.criticalChance = 5
-        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.CURE, 3),
-                                                    (FFSpellSystem.SpellInstance.FOG, 2),
-                                                    (FFSpellSystem.SpellInstance.SANCTUARY, 2)])
+        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.CURE, [3, 3]),
+                                                    (FFSpellSystem.SpellInstance.FOG, [2, 2]),
+                                                    (FFSpellSystem.SpellInstance.SANCTUARY, [2, 2])])
         self.name = name
 
 
@@ -350,9 +398,9 @@ class BlackMage(Hero):
         self.hitRate = 18
         self.magicDef = 44
         self.criticalChance = 15
-        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.FIRE, 3),
-                                                    (FFSpellSystem.SpellInstance.POISON_GAS, 2),
-                                                    (FFSpellSystem.SpellInstance.SLOW, 2)])
+        self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.FIRE, [3, 3]),
+                                                    (FFSpellSystem.SpellInstance.POISON_GAS, [2, 2]),
+                                                    (FFSpellSystem.SpellInstance.SLOW, [2, 2])])
         self.name = name
 
 
@@ -363,6 +411,10 @@ class Enemy(Character):
         self.currentHP = self.maxHP
         self.contactStatus = ''
         self.spellChance = 0
+
+    def setEnemyDefaultValues(self):
+        self.currentHP = self.maxHP
+        self.fullName = "Enemy " + self.name
 
 
 # Represents a 'Goblin' type enemy
@@ -380,6 +432,7 @@ class Goblin(Enemy):
         self.agility = 18
         self.magicDef = 16
         self.criticalChance = 4
+        self.experience = 6
         self.name = name
 
 
@@ -477,7 +530,7 @@ class Goblin(Enemy):
 #             return specificList
 
 
-# Allows the player to choose the target of an attack, spell, item, etc.
+# Allows the player to choose the target of an attack, item, etc.
 def chooseTarget(targetList):
     # Loops until the player chooses a legal target
     while True:
@@ -491,30 +544,31 @@ def chooseTarget(targetList):
         # Returns the chosen index, or None if the player chose to cancel the action
         if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(targetList):
             return int(targetChosen)
-        elif targetChosen == "c".lower():
+        elif targetChosen.lower() == "c":
             return None
         print("That is not a valid response.")
         time.sleep(1)
 
 
-def chooseSpell(actingHero, targetList):
+# Allows the player to choose the spell they wish to cast
+def chooseSpell(actingHero, spellList):
     # Loops until the player chooses a legal target
     while True:
         print("Choose which spell you'd like to cast.")
         time.sleep(1)
         # Prints all available targets, and the indices to each available target
-        for index, target in enumerate(targetList):
+        for index, target in enumerate(spellList):
             print("\t\t{}. {}".format(index + 1, target[0]))
         print("\t\tc. Cancel")
         targetChosen = input()
         # Returns the chosen index, or None if the player chose to cancel the action
-        if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(targetList):
+        if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(spellList):
             spellChosen = list(actingHero.spellsKnown.keys())[int(targetChosen) - 1]
-            if actingHero.spellsKnown[spellChosen] > 0:
+            if actingHero.spellsKnown[spellChosen][0] > 0:
                 return int(targetChosen)
             print("You cannot cast that spell anymore.")
             time.sleep(1)
-        elif targetChosen == "c".lower():
+        elif targetChosen.lower() == "c":
             return None
         else:
             print("That is not a valid response.")
@@ -541,8 +595,9 @@ def printCurrentRoundDetails(currentRound, heroList, enemyList):
     time.sleep(2)
 
 
+# Takes player input to determine which action they'd like to do that turn
 def chooseTurnAction(actingHero, livingHeroes, livingEnemies):
-    listOfOptions = ["Attack", "Cast a spell", "Use an item", "Run away"]
+    listOfOptions = ["Attack", "Cast a spell", "Use an item", "Run away", "Examine party"]
     while True:
         print("{}! Choose your action.".format(actingHero.name))
         time.sleep(0.5)
@@ -550,65 +605,75 @@ def chooseTurnAction(actingHero, livingHeroes, livingEnemies):
         for index, option in enumerate(listOfOptions):
             print("\t\t{}. {}".format(index + 1, option))
         targetChosen = input()
-        # Returns the chosen index, or None if the player chose to cancel the action
+        # Passes the chosen index to a function that determines which function to use it in
         if targetChosen.isnumeric() and 0 < int(targetChosen) <= len(listOfOptions):
-            actionChosenBoolean = controlActionChoiceLogic(actingHero, livingHeroes, livingEnemies,
-                                                           int(targetChosen))
-            if actionChosenBoolean:
+            wasActionCompleted = applyTurnAction(actingHero, livingHeroes, livingEnemies, int(targetChosen))
+            # If the player did not cancel the function, break out of the loop to end their turn
+            if wasActionCompleted:
                 break
         else:
             print("That is not a valid response.")
             time.sleep(1)
 
 
-def controlActionChoiceLogic(actingHero, livingHeroes, livingEnemies, actionChosen):
-    # If the hero chooses to physically attack
+# Determines which functions to call, depending on which action the player chose
+def applyTurnAction(actingHero, livingHeroes, livingEnemies, actionChosen):
+    actionCompleted = False
     if actionChosen == 1:
+        actionCompleted = False
         targetChosen = chooseTarget(livingEnemies)
         if targetChosen:
-            print("{} attacks enemy {}!".format(actingHero.name, livingEnemies[targetChosen - 1].name))
-            time.sleep(1.5)
             actingHero.attackTarget(livingEnemies[targetChosen - 1])
-            return True
-    # If the hero chooses to cast a spell
+            actionCompleted = True
     elif actionChosen == 2:
-        actingHero.reorderCharacterSpellDict()
-        spellListWithCharges = actingHero.getListOfKnownSpellsAndCharges()
-        if not actingHero.spellsKnown or all(value == 0 for value in actingHero.spellsKnown.values()):
-            print("You cannot cast a spell now.")
-            time.sleep(1.5)
-            return False
-        spellChosen = chooseSpell(actingHero, spellListWithCharges)
-        if spellChosen:
-            livingCombatants = livingHeroes + livingEnemies
-            spellCastBoolean = FFSpellSystem.Spell.castSpellSuperclassMethod(spellChosen - 1, actingHero,
-                                                                             livingCombatants)
-            if spellCastBoolean:
-                return True
-    # If the hero chooses to use an item
+        actionCompleted = actingHero.selectAndCastSpell(livingHeroes, livingEnemies)
     elif actionChosen == 3:
-        pass  # Define item use
-    # If the hero chooses to run
+        global playerCurrentInventory
+        actionCompleted = FFItemSystem.playerCurrentInventory.useItem(livingHeroes + livingEnemies)
     elif actionChosen == 4:
-        if actingHero.shouldRun(livingEnemies):
-            for enemy in livingEnemies:
-                enemy.currentHP = 0
-            print("Escaped!")
-        else:
-            print("You couldn't escape!")
-        time.sleep(1.5)
+        actionCompleted = attemptToRun(actingHero, livingEnemies)
+    # Note that this action always returns false, as examining the battlefield does not use up a turn
+    elif actionChosen == 5:
+        actionCompleted = examineBattlefield(livingHeroes)
+    # If the player did not cancel the action, return True so the chooseTurnAction function will break from its loop
+    if actionCompleted:
         return True
+    # If the player did cancel the action, return False so the chooseTurnAction function will loop
+    return False
+
+
+def attemptToRun(actingHero, livingEnemies):
+    if actingHero.shouldRun(livingEnemies):
+        for enemy in livingEnemies:
+            enemy.currentHP = 0
+        print("Escaped!")
+    else:
+        print("You couldn't escape!")
+    time.sleep(1.5)
+    return True
+
+
+def examineBattlefield(allHeroes):
+    for hero in allHeroes:
+        print("{}'s HP: {} / {}".format(hero.name, hero.currentHP, hero.maxHP))
+        heroStatusList = ', '.join(hero.status)
+        print("{}'s status: {}".format(hero.name, heroStatusList or 'Healthy'))
+        time.sleep(0.5)
+    time.sleep(1.5)
+    print()
     return False
 
 
 # Controls the flow of combat between heroes and enemies
-def controlCombatSystemLogic(heroList, enemyList):
+def startCombat(heroList, enemyList):
     listOfCombatants = (heroList + enemyList)
     battleInProgress = True
     roundCount = 0
+    # Set t
     for enemy in enemyList:
-        enemy.currentHP = enemy.maxHP
-        enemy.fullName = "Enemy " + enemy.name
+        enemy.setEnemyDefaultValues()
+    for hero in heroList:
+        hero.setHeroDefaultValues()
     livingEnemies = [enemy for enemy in enemyList if enemy.currentHP > 0]
     livingHeroes = [hero for hero in heroList if hero.currentHP > 0]
     while battleInProgress:
@@ -627,7 +692,7 @@ def controlCombatSystemLogic(heroList, enemyList):
             # If the current attacker is an enemy and there are surviving heroes, they randomly attack one
             elif currentActingCombatant in livingEnemies and len(livingHeroes) > 0:
                 targetChosen = random.randint(0, len(livingHeroes) - 1)
-                print("{} attacks {}!".format(currentActingCombatant.fullName, livingHeroes[targetChosen - 1].name))
+                currentActingCombatant.attackTarget(livingHeroes[targetChosen - 1])
                 time.sleep(1.5)
             livingEnemies = [enemy for enemy in enemyList if enemy.currentHP > 0]
             livingHeroes = [hero for hero in heroList if hero.currentHP > 0]
@@ -635,8 +700,5 @@ def controlCombatSystemLogic(heroList, enemyList):
             if livingHeroes == [] or livingEnemies == []:
                 battleInProgress = False
 
-#
-# # if __name__ == '__main__':  # del
-# #    main()  # del
-#
 
+playerCurrentInventory = FFItemSystem.Inventory()
