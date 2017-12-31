@@ -1,7 +1,10 @@
 import random
 import time
 import FFBattleSystem
+import FFStatusSystem
 
+
+# special effect init
 
 class Spell:
     def __init__(self):
@@ -122,7 +125,8 @@ class HealingSpell(Spell):
                 FFBattleSystem.Character.printAmountHealed(character, healHPValue)
                 # Heals the target character, up to a maximum of their max HP value
                 FFBattleSystem.Character.healCharacter(character, healHPValue)
-                FFBattleSystem.Character.printCurrentHP(character)
+                if isinstance(character, FFBattleSystem.Hero):
+                    FFBattleSystem.Character.printCurrentHP(character)
             return True
         return False
 
@@ -273,11 +277,11 @@ class FireSpell(DamageSpell):
         time.sleep(1)
 
 
-class PoisonGasSpell(DamageSpell):
+class PoisonSmokeSpell(DamageSpell):
     def __init__(self):
         super().__init__()
         self.target = "All"
-        self.name = "Poison Gas"
+        self.name = "Poison Smoke"
         self.effect = "(Causes low poison-type damage to all enemies)"
         self.spellPower = 12
         self.spellAccuracy = 20
@@ -321,8 +325,9 @@ class JudgmentSpell(DamageSpell):
 
     def printSpellMessage(self, caster, target):
         casterName = "enemy " + caster.name if isinstance(caster, FFBattleSystem.Enemy) else caster.name
+        targetAffiliation = "your party's" if isinstance(caster, FFBattleSystem.Enemy) else "the enemies'"
         print("{} chants as clouds gather overhead... With a mighty cry from {}, lightning rains down from the "
-              "heavens towards {}.".format(caster.fullName, casterName, target.fullName))
+              "heavens towards {}.".format(caster.fullName, casterName, targetAffiliation))
         if isinstance(caster, FFBattleSystem.Hero):
             caster.currentHP = 1
         time.sleep(1)
@@ -357,7 +362,7 @@ class DebuffSpell(Spell):
                     self.printSpellMessageMiss(actingHero, character)
                     missedAllTargets = False
             if missedAllTargets:
-                self.printSpellMessageMiss(actingHero, character)
+                self.printSpellMessageMiss(actingHero, listOfSelectedTargets[0])
             return True
         return False
 
@@ -454,21 +459,34 @@ class StatusSpell(Spell):
             missedAllTargets = True
             for character in listOfSelectedTargets:
                 if self.shouldSpellHit(character):
-                    self.printSpellMessageHit(actingHero, character)
                     for statusEffect in self.status:
                         # Status spells add the status effect to the target's status effect list
                         # The only status that can occur multiple times in a target's status effect list is Doom
-                        if statusEffect not in character.status or statusEffect == "Doom":
-                            character.status.append(statusEffect)
+                        newStatus = statusEffect.createNewStatusInstance()
+                        self.applyStatus(newStatus(), actingHero, character)
                     missedAllTargets = False
                 # Status spells can miss, which causes the spell to have no effect
                 elif self.target == "One":
                     self.printSpellMessageMiss(actingHero, character)
                     missedAllTargets = False
             if missedAllTargets:
-                self.printSpellMessageMiss(actingHero, character)
+                self.printSpellMessageMiss(actingHero, listOfSelectedTargets[0])
             return True
         return False
+
+    def applyStatus(self, statusEffect, actingHero, target):
+        if not statusEffect.isCharacterAlreadyAffectedByStatus(target):
+            target.status.append(statusEffect)
+            self.printSpellMessageHit(actingHero, target)
+        elif statusEffect.stackingEffect:
+            currentStatusList = [currentStatus for currentStatus in target.status if
+                                 currentStatus.name == statusEffect.name]
+            currentStatusList[0].stackEffect(target)
+            self.printSpellMessageHit(actingHero, target)
+        else:
+            targetName = "enemy " + target.name if isinstance(target, FFBattleSystem.Enemy) else target.name
+            print("But the {} had no effect on {}.".format(self.name, targetName))
+        time.sleep(1)
 
 
 class StunSpell(StatusSpell):
@@ -479,7 +497,7 @@ class StunSpell(StatusSpell):
         self.effect = "(Paralyzes one enemy)"
         self.spellAccuracy = 64
         self.spellElement = ["Status"]
-        self.status = ["Paralysis"]
+        self.status = [FFStatusSystem.Paralysis]
 
     def printSpellMessage(self, caster, target):
         targetName = "enemy " + target.name if isinstance(target, FFBattleSystem.Enemy) else target.name
@@ -503,7 +521,7 @@ class SilenceSpell(StatusSpell):
         self.effect = "(Silences one enemy, preventing them from casting spells)"
         self.spellAccuracy = 44
         self.spellElement = ["Status"]
-        self.status = ["Silence"]
+        self.status = [FFStatusSystem.Silence]
 
     def printSpellMessage(self, caster, target):
         targetName = "enemy " + target.name if isinstance(target, FFBattleSystem.Enemy) else target.name
@@ -529,7 +547,7 @@ class DoomSpell(StatusSpell):
         self.effect = "(Makes all enemies fall after three turns)"
         self.spellAccuracy = 30
         self.spellElement = ["Death"]
-        self.status = [["Doom", "Doom", "Doom"]]
+        self.status = [FFStatusSystem.Doom]
 
     def printSpellMessage(self, caster, target):
         targetAffiliation = "your party's" if isinstance(caster, FFBattleSystem.Enemy) else "the enemies'"
@@ -563,7 +581,7 @@ class InstantDeathSpell(Spell):
                     self.printSpellMessageMiss(actingHero, character)
                     missedAllTargets = False
             if missedAllTargets:
-                self.printSpellMessageMiss(actingHero, character)
+                self.printSpellMessageMiss(actingHero, listOfSelectedTargets[0])
             return True
         return False
 
@@ -608,7 +626,7 @@ class BaneSpell(InstantDeathSpell):
 
     def printSpellMessageMiss(self, caster, target):
         targetAffiliation = "Your party seems" if isinstance(caster, FFBattleSystem.Enemy) else "The enemies seem"
-        print("{} to be unphased by the mist.".format(target.fullName, targetAffiliation))
+        print("{} seems to be unphased by the mist.".format(targetAffiliation))
         time.sleep(1)
 
 
@@ -631,11 +649,12 @@ class PurgeSpell(AuxiliarySpell):
             # Heals all negative non-KO, non-Doom status effects
             tempStatus = []
             self.printSpellMessage(actingHero, targetList[selectedTargetIndex - 1])
-            for status in targetList[selectedTargetIndex - 1].status:
-                if status in ["KO", "Stone", "Doom"]:
-                    tempStatus.append(status)
+            for statusEffect in targetList[selectedTargetIndex - 1].status:
+                if statusEffect.name in ["Unconscious", "Stone", "Root", "Doom"]:
+                    tempStatus.append(statusEffect)
                 else:
-                    print("{}'s body is purged of its {}.".format(targetList[selectedTargetIndex - 1].name, status))
+                    print("{}'s body is purged of its {}.".format(targetList[selectedTargetIndex - 1].name,
+                                                                  statusEffect.name))
                     time.sleep(0.5)
             if targetList[selectedTargetIndex - 1].status == tempStatus:
                 print("But there are no negative status effects that {}'s magic can purge.".format(actingHero.name))
@@ -656,7 +675,7 @@ class SpellInstance:
     SANCTUARY = SanctuarySpell()
     HASTE = HasteSpell()
     FIRE = FireSpell()
-    POISON_GAS = PoisonGasSpell()
+    POISON_SMOKE = PoisonSmokeSpell()
     SLOW = SlowSpell()
     STUN = StunSpell()
     SOFT = SoftSpell()

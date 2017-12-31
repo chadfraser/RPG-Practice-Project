@@ -3,12 +3,15 @@ import time
 import collections
 import FFSpellSystem
 import FFItemSystem
+import FFStatusSystem
+
+playerCurrentInventory = FFItemSystem.Inventory()
 
 
 class Character:
     orderedSpellList = [FFSpellSystem.SpellInstance.CURE, FFSpellSystem.SpellInstance.FOG,
                         FFSpellSystem.SpellInstance.SANCTUARY, FFSpellSystem.SpellInstance.FIRE,
-                        FFSpellSystem.SpellInstance.POISON_GAS, FFSpellSystem.SpellInstance.SLOW,
+                        FFSpellSystem.SpellInstance.POISON_SMOKE, FFSpellSystem.SpellInstance.SLOW,
                         FFSpellSystem.SpellInstance.BEACON, FFSpellSystem.SpellInstance.SILENCE,
                         FFSpellSystem.SpellInstance.HASTE, FFSpellSystem.SpellInstance.STUN,
                         FFSpellSystem.SpellInstance.SOFT, FFSpellSystem.SpellInstance.CURSE,
@@ -34,7 +37,22 @@ class Character:
         self.resistance = []
         self.spellsKnown = collections.OrderedDict()
         self.status = []
+        self.equipment = []
         self.experience = 0
+
+    def activateStartOfTurnStatusEffects(self):
+        tempStatusList = self.status[:]
+        for statusEffect in tempStatusList:
+            statusEffect.startOfTurnEffect(self)
+            if self.currentHP == 0:
+                break
+
+    def attackTargetWithoutControl(self, targetList):
+        targetChosen = random.randint(0, len(targetList) - 1)
+        print("{} attacks without thinking.".format(self.fullName))
+        time.sleep(1)
+        self.attackTarget(targetList[targetChosen])
+        time.sleep(1.5)
 
     # Controls the logic and flow of a character's physical attack
     def attackTarget(self, target):
@@ -94,6 +112,7 @@ class Character:
         # HP has a minimum value of 0
         if self.currentHP <= 0:
             self.currentHP = 0
+            self.status = [FFStatusSystem.Unconscious()]
         # If the target was a hero, displays their current HP
         if isinstance(self, Hero):
             self.printCurrentHP()
@@ -102,6 +121,9 @@ class Character:
     def isIncapacitated(self):
         if self.currentHP <= 0:
             return True
+        for statusEffect in self.status:
+            if statusEffect.isIncapacitated:
+                return True
         return False
 
     # Tests if a character is weak to a particular element
@@ -131,7 +153,11 @@ class Character:
         time.sleep(1)
 
     def printAttackTarget(self, target):
-        print("{} attacks {}!".format(self.fullName, target.fullName))
+        targetName = "enemy " + target.name if isinstance(target, Enemy) else target.name
+        if self == target:
+            print("{} attacks themselves!".format(self.fullName))
+        else:
+            print("{} attacks {}!".format(self.fullName, targetName))
         time.sleep(1.5)
 
     # Prints that the attacker missed
@@ -159,43 +185,33 @@ class Character:
         self.currentHP = min(self.maxHP, self.currentHP + healHPValue)
 
     # Increases a particular stat of the character by a specific amount
-    def buffCharacter(self, statusToBuff, statValue):
-        if statusToBuff == "Defense":
+    def buffCharacter(self, statToBuff, statValue):
+        if statToBuff == "Defense":
             self.defense += statValue
             time.sleep(1)
-        elif statusToBuff == "Strike Count":
+        elif statToBuff == "Strike Count":
             self.strikeCount += statValue
             time.sleep(1)
-        elif statusToBuff == "Evasion":
+        elif statToBuff == "Evasion":
             self.evasion += statValue
             time.sleep(1)
 
     # Decreases a particular stat of the character by a specific amount
-    def debuffCharacter(self, statusToDebuff, statValue):
-        if statusToDebuff == "Defense":
+    def debuffCharacter(self, statToDebuff, statValue):
+        if statToDebuff == "Defense":
             self.defense = max(0, self.defense - statValue)
             time.sleep(1)
-        elif statusToDebuff == "Strike Count":
+        elif statToDebuff == "Strike Count":
             self.strikeCount = max(1, self.strikeCount - statValue)
             time.sleep(1)
-        elif statusToDebuff == "Evasion":
+        elif statToDebuff == "Evasion":
             self.strikeCount = max(0, self.evasion - statValue)
             time.sleep(1)
 
-    # TO BE IMPLEMENTED LATER
-    # # Controls the logic for the Paralysis status effect
-    # def controlParalysisStatusLogic(self):
-    #     # If the character has Paralysis in their status list, generate a random number from 1 to 4 and return True
-    #     if "Paralysis" in self.status:
-    #         paralysisCheck = random.randint(1, 4)
-    #         # The character is healed of Paralysis 25% of the time
-    #         if paralysisCheck == 1:
-    #             self.status.remove("Paralysis")
-    #         return True
-    #     return False
-
 
 class Hero(Character):
+    playerStartingParty = []
+
     def __init__(self):
         Character.__init__(self)
         self.currentHP = self.maxHP
@@ -218,6 +234,7 @@ class Hero(Character):
         self.defense = self.armor
         self.evasion = self.agility
         self.strikeCount = 1 + self.hitRate // 32
+        self.accuracy = self.hitRate
         self.fullName = self.name
 
     # Returns a list of strings containing the spells a character knows and how many charges of that spell remain
@@ -277,7 +294,7 @@ class Hero(Character):
 
 # Represents a 'Fighter' type hero
 class Fighter(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "Fighter"
 
     def __init__(self, name="FHTR"):
@@ -297,7 +314,7 @@ class Fighter(Hero):
 
 # Represents a 'Thief' type hero
 class Thief(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "Thief"
 
     def __init__(self, name="THEF"):
@@ -317,7 +334,7 @@ class Thief(Hero):
 
 # Represents a 'Monk' type hero
 class Monk(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "Monk"
 
     def __init__(self, name="MONK"):
@@ -338,7 +355,7 @@ class Monk(Hero):
 
 # Represents a 'Red Mage' type hero
 class RedMage(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "Red Mage"
 
     def __init__(self, name="RdMG"):
@@ -360,7 +377,7 @@ class RedMage(Hero):
 
 # Represents a 'White Mage' type hero
 class WhiteMage(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "White Mage"
 
     def __init__(self, name="WhMG"):
@@ -383,7 +400,7 @@ class WhiteMage(Hero):
 
 # Represents a 'Black Mage' type hero
 class BlackMage(Hero):
-    def __repr__(self):
+    def __str__(self):
         return "Black Mage"
 
     def __init__(self, name="BlMG"):
@@ -399,7 +416,7 @@ class BlackMage(Hero):
         self.magicDef = 44
         self.criticalChance = 15
         self.spellsKnown = collections.OrderedDict([(FFSpellSystem.SpellInstance.FIRE, [3, 3]),
-                                                    (FFSpellSystem.SpellInstance.POISON_GAS, [2, 2]),
+                                                    (FFSpellSystem.SpellInstance.POISON_SMOKE, [2, 2]),
                                                     (FFSpellSystem.SpellInstance.SLOW, [2, 2])])
         self.name = name
 
@@ -409,7 +426,7 @@ class Enemy(Character):
         Character.__init__(self)
         self.fullName = "Enemy " + self.name
         self.currentHP = self.maxHP
-        self.contactStatus = ''
+        self.contactStatus = []
         self.spellChance = 0
 
     def setEnemyDefaultValues(self):
@@ -419,7 +436,7 @@ class Enemy(Character):
 
 # Represents a 'Goblin' type enemy
 class Goblin(Enemy):
-    def __repr__(self):
+    def __str__(self):
         return "Goblin"
 
     def __init__(self, name="Goblin"):
@@ -434,88 +451,6 @@ class Goblin(Enemy):
         self.criticalChance = 4
         self.experience = 6
         self.name = name
-
-
-# TO BE IMPLEMENTED LATER
-# class StatusEffect:
-#     def __init__(self, name):
-#         self.name = name
-#         self.endsAfterBattle = True
-#
-#     def isIncapacitated(self):
-#         if self.name in ["Stone"]:
-#             return True
-#         return False
-#
-#     def cannotAct(self):
-#         if self.name in ["Paralysis", "Sleep"]:
-#             return True
-#         return False
-#
-#     def applyStatusDamage(self, character):
-#         pass
-#
-#     # Prints that a character has died from the Doom status
-#     def printDoomMessage(self, character):
-#         print("--{}'s lifeline has been cut short by dark magic.".format(character.fullName))
-#         time.sleep(1)
-#         character.printDeathMessage()
-#
-#     # Controls the logic for the Doom status effect
-#     def controlDoomStatusLogic(self, character):
-#         # If the character has Doom in their status list, remove it from the list
-#         sublist = isInList(character.status, "Doom")
-#         if sublist:
-#             sublist.remove("Doom")
-#             # If that was the last copy of Doom in their status list, that character dies and a message prints
-#             if "Doom" not in sublist:
-#                 character.currentHP = 0
-#                 character.printDoomMessage()
-#
-#
-# class ParalysisStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class PoisonStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class StoneStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class BlindStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class MuteStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class SleepStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class ConfusionStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class DoomStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
-#
-#
-# class HolyStatus(StatusEffect):
-#     def __init__(self):
-#         super().__init__()
 
 
 ####################################
@@ -626,15 +561,18 @@ def applyTurnAction(actingHero, livingHeroes, livingEnemies, actionChosen):
             actingHero.attackTarget(livingEnemies[targetChosen - 1])
             actionCompleted = True
     elif actionChosen == 2:
+        if any(statusEffect.name == "Silence" for statusEffect in actingHero.status):
+            print("{} is Silenced, and cannot cast magic.".format(actingHero.name))
+            time.sleep(1)
+            return False
         actionCompleted = actingHero.selectAndCastSpell(livingHeroes, livingEnemies)
     elif actionChosen == 3:
-        global playerCurrentInventory
-        actionCompleted = FFItemSystem.playerCurrentInventory.useItem(livingHeroes + livingEnemies)
+        actionCompleted = playerCurrentInventory.useItem(livingHeroes + livingEnemies)
     elif actionChosen == 4:
         actionCompleted = attemptToRun(actingHero, livingEnemies)
     # Note that this action always returns false, as examining the battlefield does not use up a turn
     elif actionChosen == 5:
-        actionCompleted = examineBattlefield(livingHeroes)
+        actionCompleted = examineBattlefield()
     # If the player did not cancel the action, return True so the chooseTurnAction function will break from its loop
     if actionCompleted:
         return True
@@ -653,11 +591,12 @@ def attemptToRun(actingHero, livingEnemies):
     return True
 
 
-def examineBattlefield(allHeroes):
-    for hero in allHeroes:
+def examineBattlefield():
+    for hero in Hero.playerStartingParty:
         print("{}'s HP: {} / {}".format(hero.name, hero.currentHP, hero.maxHP))
-        heroStatusList = ', '.join(hero.status)
-        print("{}'s status: {}".format(hero.name, heroStatusList or 'Healthy'))
+        heroStatusList = [statusEffect.name for statusEffect in hero.status]
+        heroStatusString = ', '.join(heroStatusList)
+        print("{}'s status: {}".format(hero.name, heroStatusString or 'Healthy'))
         time.sleep(0.5)
     time.sleep(1.5)
     print()
@@ -666,7 +605,7 @@ def examineBattlefield(allHeroes):
 
 # Controls the flow of combat between heroes and enemies
 def startCombat(heroList, enemyList):
-    listOfCombatants = (heroList + enemyList)
+    listOfCombatants = heroList + enemyList
     battleInProgress = True
     roundCount = 0
     # Set t
@@ -687,18 +626,26 @@ def startCombat(heroList, enemyList):
             # If the current attacker is a hero and there are surviving enemies, they are given a list of all
             # surviving enemies, and choose which one to attack
             if currentActingCombatant in livingHeroes and len(livingEnemies) > 0:
-                chooseTurnAction(currentActingCombatant, livingHeroes, livingEnemies)
-                # If the hero chooses to physically attack
+                currentActingCombatant.activateStartOfTurnStatusEffects()
+                if all(statusEffect.canAct for statusEffect in currentActingCombatant.status):
+                    if any(statusEffect.name == "Confusion" for statusEffect in currentActingCombatant.status):
+                        currentActingCombatant.attackTargetWithoutControl(livingHeroes + livingEnemies)
+                    else:
+                        chooseTurnAction(currentActingCombatant, livingHeroes, livingEnemies)
+                    time.sleep(1.5)
+            # If the hero chooses to physically attack
             # If the current attacker is an enemy and there are surviving heroes, they randomly attack one
             elif currentActingCombatant in livingEnemies and len(livingHeroes) > 0:
-                targetChosen = random.randint(0, len(livingHeroes) - 1)
-                currentActingCombatant.attackTarget(livingHeroes[targetChosen - 1])
-                time.sleep(1.5)
-            livingEnemies = [enemy for enemy in enemyList if enemy.currentHP > 0]
-            livingHeroes = [hero for hero in heroList if hero.currentHP > 0]
+                currentActingCombatant.activateStartOfTurnStatusEffects()
+                if all(statusEffect.canAct for statusEffect in currentActingCombatant.status):
+                    if any(statusEffect.name == "Confusion" for statusEffect in currentActingCombatant.status):
+                        currentActingCombatant.attackTargetWithoutControl(livingHeroes + livingEnemies)
+                    else:
+                        targetChosen = random.randint(0, len(livingHeroes) - 1)
+                        currentActingCombatant.attackTarget(livingHeroes[targetChosen])
+                        time.sleep(1.5)
+            livingEnemies = [enemy for enemy in enemyList if not enemy.isIncapacitated()]
+            livingHeroes = [hero for hero in heroList if not hero.isIncapacitated()]
             # The battle ends once one side is completely defeated
             if livingHeroes == [] or livingEnemies == []:
                 battleInProgress = False
-
-
-playerCurrentInventory = FFItemSystem.Inventory()
